@@ -42,7 +42,7 @@ export default function LoginForm() {
     } catch (err) {
       console.error('handleLoginSubmit error:', err);
       if (err.code === 'email-not-verified') {
-        setError('Email not verified. Please check your inbox or resend verification from signup flow.');
+        setError('Email not verified. Please check your inbox and verify your email, then log in again.');
       } else {
         setError(err.message);
       }
@@ -63,8 +63,16 @@ export default function LoginForm() {
       console.info('handleSignupSubmit: signupUser resolved', res);
       // After signup, move to login so they can sign in after verifying.
       setMode('login');
-      if (res?.profileError) {
-        setNotice(`Account created. Verification email sent to ${signupData.email}. Note: profile details were not saved yet (${res.profileError}). You can still log in after verifying and save your profile from the Profile page.`);
+      const storage = res?.profileStorage;
+      if (res?.profileSaved && storage === 'firestore') {
+        setNotice(`Account created. Verification email sent to ${signupData.email}. Please verify before logging in.`);
+      } else if (res?.profileSaved && storage === 'rtdb') {
+        setNotice(`Account created. Verification email sent to ${signupData.email}. Profile saved to Realtime Database (Firestore blocked by rules). Please verify before logging in.`);
+      } else if (res?.profileError) {
+        const hint = String(res.profileError).includes('permission-denied')
+          ? ' Fix: publish Firestore rules to allow authenticated users to write users/{uid}, or enable RTDB and rules for users/{uid}.'
+          : '';
+        setNotice(`Account created. Verification email sent to ${signupData.email}. Note: profile details could not be saved (${res.profileError}).${hint} You can log in after verifying and save your profile from the Profile page.`);
       } else {
         setNotice(`Account created. Verification email sent to ${signupData.email}. Please verify before logging in.`);
       }

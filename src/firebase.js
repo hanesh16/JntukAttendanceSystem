@@ -4,6 +4,7 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  updateProfile,
   sendEmailVerification,
   sendPasswordResetEmail,
   signOut
@@ -93,11 +94,34 @@ try{
 
 export { auth, db, rtdb, hasRTDB };
 
+function formatFirebaseError(err) {
+  if (!err) return 'Unknown error';
+  const code = err?.code ? String(err.code) : '';
+  const message = err?.message ? String(err.message) : String(err);
+  return code ? `${code}: ${message}` : message;
+}
+
+function normalizeEmail(value) {
+  const raw = String(value || '').trim();
+  if (!raw) throw new Error('Email is required');
+  return raw;
+}
+
 export async function upsertUserProfile(uid, data) {
   if (!uid) throw new Error('Missing uid');
   if (!data || typeof data !== 'object') throw new Error('Missing profile data');
-  const userRef = doc(db, 'users', uid);
-  await setDoc(userRef, data, { merge: true });
+  try {
+    const userRef = doc(db, 'users', uid);
+    await setDoc(userRef, data, { merge: true });
+    return;
+  } catch (err) {
+    // If Firestore rules are blocking, allow saving to RTDB when configured.
+    if (hasRTDB) {
+      await upsertUserProfileRTDB(uid, data);
+      return;
+    }
+    throw err;
+  }
 }
 
 // Realtime Database (RTDB) profile helpers
@@ -125,18 +149,30 @@ export async function getUserProfileRTDB(uid) {
   const pathRef = rtdbRef(rtdb, `users/${uid}`);
   const snap = await rtdbGet(pathRef);
   if (!snap.exists()) return null;
-  return { uid, ...snap.val() };
+  return { uid, __source: 'rtdb', ...snap.val() };
 }
 
 export async function signupUser({ name, id, branch, phone, email, password, role, photoFile }) {
   try{
-    console.info('signupUser: creating user', email);
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseEmail = normalizeEmail(email);
+    console.info('signupUser: creating user', firebaseEmail);
+    const cred = await createUserWithEmailAndPassword(auth, firebaseEmail, password);
     const user = cred.user;
     console.info('signupUser: created uid=', user.uid);
 
-    // Keep existing verification behavior, but send the email ASAP so it isn't blocked
-    // by photo upload / Firestore writes.
+    // Store name in Firebase Auth profile so the app can display it
+    // even if Firestore profile write is blocked by rules.
+    const safeName = String(name || '').trim();
+    if (safeName) {
+      try {
+        await updateProfile(user, { displayName: safeName });
+        console.info('signupUser: set auth displayName to name');
+      } catch (err) {
+        console.warn('signupUser: updateProfile failed:', err?.message || String(err));
+      }
+    }
+
+    // Send verification email to the real email used at signup.
     console.info('signupUser: sending verification email');
     await sendEmailVerification(user);
     console.info('signupUser: verification email sent');
@@ -148,38 +184,58 @@ export async function signupUser({ name, id, branch, phone, email, password, rol
       console.info('signupUser: photoFile provided; skipping upload at signup (upload from Profile page instead)');
     }
 
-    // Store profile in Firestore (best-effort). If this fails or hangs due to network,
-    // do NOT keep the UI stuck on "Saving...".
+    // Store profile in Firestore (users/{uid}). If rules block it, fall back to RTDB when configured.
     let profileSaved = false;
+    let profileStorage = null; // 'firestore' | 'rtdb' | null
     let profileError = null;
+
+    const profilePayload = {
+      name,
+      userName: name,
+      id,
+      userId: id,
+      branch,
+      phone,
+      email: firebaseEmail,
+      role,
+      photoURL,
+      createdAt: serverTimestamp()
+    };
+
     try {
       const userRef = doc(db, 'users', user.uid);
       console.info('signupUser: writing user profile to Firestore');
-
-      const writePromise = setDoc(userRef, {
-        name,
-        id,
-        branch,
-        phone,
-        email: email || user.email || null,
-        role,
-        photoURL,
-        createdAt: serverTimestamp()
-      });
-
-      const timeoutMs = 15000;
-      await Promise.race([
-        writePromise,
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Profile save timed out (network issue). You can still log in after verifying email.')), timeoutMs)
-        )
-      ]);
-
+      await setDoc(userRef, profilePayload, { merge: true });
       profileSaved = true;
-      console.info('signupUser: profile written');
+      profileStorage = 'firestore';
+      console.info('signupUser: profile written to Firestore');
     } catch (err) {
-      profileError = err?.message || String(err);
-      console.warn('signupUser: profile write skipped/failed:', profileError);
+      profileError = formatFirebaseError(err);
+      console.warn('signupUser: Firestore profile write failed:', profileError);
+      if (hasRTDB) {
+        try {
+          console.info('signupUser: trying RTDB fallback write');
+          const profilePayloadRTDB = {
+            name,
+            userName: name,
+            id,
+            userId: id,
+            branch,
+            phone,
+            email: firebaseEmail,
+            role: role || 'student',
+            photoURL: photoURL || ''
+          };
+          await upsertUserProfileRTDB(user.uid, profilePayloadRTDB);
+          profileSaved = true;
+          profileStorage = 'rtdb';
+          console.info('signupUser: profile written to RTDB');
+        } catch (err2) {
+          const rtdbError = formatFirebaseError(err2);
+          profileError = `${profileError}; RTDB fallback failed: ${rtdbError}`;
+          console.warn('signupUser: RTDB fallback write failed:', rtdbError);
+        }
+      }
     }
 
     // Sign out so user must verify first (non-blocking)
@@ -190,7 +246,7 @@ export async function signupUser({ name, id, branch, phone, email, password, rol
       console.warn('signupUser: signOut failed:', err?.message || String(err));
     }
 
-    return { uid: user.uid, profileSaved, profileError };
+    return { uid: user.uid, profileSaved, profileStorage, profileError };
   }catch(err){
     console.error('signupUser error:', err && err.message ? err.message : err);
     throw err;
@@ -199,8 +255,9 @@ export async function signupUser({ name, id, branch, phone, email, password, rol
 
 export async function loginUser(email, password) {
   try{
-    console.info('loginUser: signing in', email);
-    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const firebaseEmail = normalizeEmail(email);
+    console.info('loginUser: signing in', firebaseEmail);
+    const cred = await signInWithEmailAndPassword(auth, firebaseEmail, password);
     const user = cred.user;
     // Ensure emailVerified is up to date after clicking the verification link.
     try {
@@ -210,7 +267,6 @@ export async function loginUser(email, password) {
     }
     console.info('loginUser: signed in uid=', user.uid, 'emailVerified=', user.emailVerified);
     if (!user.emailVerified) {
-      // sign out immediately
       await signOut(auth);
       const err = new Error('email-not-verified');
       err.code = 'email-not-verified';
@@ -248,23 +304,36 @@ export async function resendVerificationForSignedInUser(email, password) {
 }
 
 export async function sendPasswordReset(email) {
-  await sendPasswordResetEmail(auth, email);
+  const firebaseEmail = normalizeEmail(email);
+  await sendPasswordResetEmail(auth, firebaseEmail);
 }
 
 export async function getUserProfile(uid) {
   try {
     const ref = doc(db, 'users', uid);
     const snap = await getDoc(ref);
-    if (!snap.exists()) return null;
-    return { uid: snap.id, ...snap.data() };
+    if (snap.exists()) return { uid: snap.id, __source: 'firestore', ...snap.data() };
+    // If Firestore doc doesn't exist, try RTDB (when configured)
+    if (hasRTDB) {
+      const rtdbProfile = await getUserProfileRTDB(uid);
+      return rtdbProfile;
+    }
+    return null;
   } catch (err) {
     // Firestore throws when offline; surface a clear message and return null so caller can continue
     console.error('getUserProfile error:', err && err.message ? err.message : err);
-    if (err && err.message && err.message.toLowerCase().includes('offline')) {
-      // return null to indicate profile unavailable due to offline
-      return null;
+    // If Firestore read is blocked by rules or network, try RTDB fallback when configured.
+    if (hasRTDB) {
+      try {
+        const rtdbProfile = await getUserProfileRTDB(uid);
+        return rtdbProfile;
+      } catch (err2) {
+        console.error('getUserProfile RTDB fallback error:', err2 && err2.message ? err2.message : err2);
+      }
     }
-    // rethrow unknown errors
+    // return null for offline-like conditions; otherwise rethrow so callers can show exact reason
+    const message = String(err?.message || err);
+    if (message.toLowerCase().includes('offline')) return null;
     throw err;
   }
 }

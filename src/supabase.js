@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const tokenEndpoint = process.env.REACT_APP_SUPABASE_TOKEN_ENDPOINT;
+const defaultTokenEndpoint = typeof window !== 'undefined' ? '/supabase-token' : null;
+
+const tokenEndpoint = process.env.REACT_APP_SUPABASE_TOKEN_ENDPOINT || defaultTokenEndpoint;
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -78,21 +80,32 @@ function createSupabaseClientWithJwt(supabaseJwt) {
 // Exchange Firebase ID token -> Supabase JWT using backend
 export async function getSupabaseJwtFromFirebaseUser(firebaseUser) {
   if (!tokenEndpoint) {
-    throw new Error('Missing REACT_APP_SUPABASE_TOKEN_ENDPOINT. Set it to your backend /supabase-token URL and restart the dev server.');
+    throw new Error(
+      'Missing Supabase token endpoint. Set REACT_APP_SUPABASE_TOKEN_ENDPOINT to your backend /supabase-token URL and restart the dev server.'
+    );
   }
   if (!firebaseUser) throw new Error('Missing Firebase user');
   // Always request a fresh Firebase ID token so the backend verification doesn't fail
   // due to an expired cached token.
   const firebaseIdToken = await firebaseUser.getIdToken(true);
 
-  const res = await fetch(tokenEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      Authorization: `Bearer ${firebaseIdToken}`
+  let res;
+  try {
+    res = await fetch(tokenEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${firebaseIdToken}`
+      }
+    });
+  } catch (fetchErr) {
+    const msg = fetchErr?.message || String(fetchErr);
+    if (String(msg).toLowerCase().includes('failed to fetch')) {
+      throw new Error('Cannot reach backend for Supabase token exchange. Start backend server: open terminal in `server` folder and run `npm start` (port 5001).');
     }
-  });
+    throw fetchErr;
+  }
   const json = await res.json().catch(() => null);
   if (!res.ok) {
     const details = json?.details ? ` (${json.details})` : '';

@@ -33,6 +33,39 @@ Notes
 - Add admin users by setting a custom claim `admin` in Firebase Auth via the Firebase Admin SDK or the Firebase console (for testing, you can manually add role: 'admin' in Firestore document).
 - Firestore rules example is in `firestore.rules`.
 
+## Fix: profile not saving (permission-denied) / Dashboard shows Student: -
+
+This app saves profile data at:
+
+- Firestore: `users/{uid}` (primary)
+- Realtime Database: `users/{uid}` (fallback when configured)
+
+If you see `permission-denied` during signup/profile save, your Firebase rules in the Console are not published (or you're on the wrong project).
+
+### Publish rules from this repo (recommended)
+
+This repo includes:
+
+- `firestore.rules`
+- `database.rules.json`
+- `firebase.json` + `.firebaserc` (project: `attendencesystem-27682`)
+
+Run:
+
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --only firestore:rules,database
+```
+
+### Verify the write succeeded
+
+1. Firebase Console → **Firestore Database** → **Data**
+	- Confirm document exists at `users/<your_uid>` with fields like `name`, `id`, `branch`, `phone`.
+2. Firebase Console → **Realtime Database** (optional)
+	- Confirm JSON exists at `users/<your_uid>`.
+3. App Dashboard (dev mode)
+	- The header shows: `Dev: profile=firestore|rtdb|none; id=...`
+
 ## Supabase private Storage (RLS) with Firebase Auth
 
 If you want **private buckets** (RLS enabled) while keeping **Firebase Auth** as the only login, you must exchange a Firebase ID token for a Supabase-compatible JWT.

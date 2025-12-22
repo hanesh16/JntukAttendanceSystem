@@ -1,16 +1,10 @@
 import React, { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import jntukLogo from '../jntukimages/jntuk-logo.png';
+import HeaderNav from '../components/HeaderNav';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const { user, profile, signOut, loading } = useContext(AuthContext);
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
+  const { user, profile } = useContext(AuthContext);
 
   // Determine user role
   const userRole = profile?.role || 'student';
@@ -32,29 +26,7 @@ export default function Dashboard() {
 
   return (
     <div className="w-full min-h-screen bg-[#f8faf5]">
-      {/* Header */}
-      <div className="bg-[#2E8B57] text-white px-6 py-4 flex justify-between items-center shadow-md">
-        <div className="flex items-center gap-3">
-          <img src={jntukLogo} alt="JNTUK" className="h-12 w-12 object-contain" />
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">JNTUK Dashboard</h1>
-            <p className="text-emerald-50/90 text-xs sm:text-sm mt-1">
-              {userRole === 'professor' ? 'Professor' : 'Student'}: {displayName || (loading ? 'Loading...' : '-')}
-            </p>
-            {process.env.NODE_ENV !== 'production' && (
-              <p className="text-emerald-50/70 text-[10px] sm:text-xs mt-1">
-                Dev: profile={profile?.__source || 'none'}; id={studentId || '-'}
-              </p>
-            )}
-          </div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="px-5 py-2.5 bg-emerald-800 text-white hover:bg-red-600 rounded-lg transition-colors font-semibold"
-        >
-          Logout
-        </button>
-      </div>
+      <HeaderNav title="JNTUK Dashboard" subTitle={displayName} hideLinks={['home','profile','attendance','pdfs']} />
 
       {/* Main content area */}
       <div className="w-full p-6">
@@ -79,7 +51,7 @@ export default function Dashboard() {
                     group
                     flex flex-col items-center justify-center
                     bg-[#C1E1C1] hover:bg-[#009E60]
-                    rounded-lg p-8
+                             rounded-none p-8
                     min-h-48
                     w-full max-w-sm
                     transition-all duration-300 ease-in-out

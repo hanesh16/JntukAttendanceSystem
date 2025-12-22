@@ -23,14 +23,14 @@ export default function PDFsPage() {
       </button>
 
       {/* PDFs card */}
-      <div className="bg-white rounded-lg shadow-lg p-8">
+      <div className="bg-white rounded-none shadow-lg p-8">
         <h1 className="text-3xl font-bold text-emerald-800 mb-6">Syllabus & PDFs</h1>
 
         <div className="space-y-3">
           {pdfs.map((pdf, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between p-4 border rounded-lg bg-emerald-50 hover:bg-emerald-100 cursor-pointer transition-colors"
+              className="flex items-center justify-between p-4 border rounded-none bg-emerald-50 hover:bg-emerald-100 cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-4">
                 <span className="text-3xl">📄</span>

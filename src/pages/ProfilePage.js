@@ -444,7 +444,7 @@ export default function ProfilePage() {
     <div className="min-h-screen w-full bg-[#f8faf5] p-6">
       <div className="w-full max-w-4xl mx-auto">
         <div className="flex flex-col gap-6">
-          <div className="bg-emerald-50 rounded-xl p-8 border-2 border-emerald-200">
+          <div className="bg-[#C1E1C1]/75 rounded-none p-8 shadow-lg border-0">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-2xl font-bold text-emerald-800">Student information</h2>
               {!canEdit ? (
@@ -471,7 +471,7 @@ export default function ProfilePage() {
                   if (photoInputRef.current) photoInputRef.current.click();
                 }}
                 disabled={!canEdit}
-                className="w-28 h-28 sm:w-32 sm:h-32 border-2 border-emerald-200 rounded-lg bg-white overflow-hidden flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-28 h-28 sm:w-32 sm:h-32 border-2 border-[#2E8B57] rounded-lg bg-white overflow-hidden flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {studentPhotoPreviewUrl ? (
                   <img
@@ -652,7 +652,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="bg-emerald-50 rounded-xl p-8 border-2 border-emerald-200">
+          <div className="bg-[#C1E1C1]/75 rounded-none p-8 shadow-lg border-0">
             <h2 className="text-2xl font-bold text-emerald-800 mb-3">Personal information</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
@@ -804,7 +804,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleSaveInformation}
                 disabled={saving}
-                className="px-8 py-3 rounded-lg bg-emerald-700 text-white font-semibold hover:bg-emerald-800 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="px-8 py-3 rounded-lg bg-[#2E8B57] text-white font-semibold hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {saving ? 'Saving...' : (saveSuccess ? 'Saved successfully' : 'Save')}
               </button>

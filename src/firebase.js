@@ -153,7 +153,7 @@ export async function getUserProfileRTDB(uid) {
 }
 
 export async function signupUser({ name, id, branch, phone, email, password, role, photoFile }) {
-  try{
+  try {
     const firebaseEmail = normalizeEmail(email);
     console.info('signupUser: creating user', firebaseEmail);
     const cred = await createUserWithEmailAndPassword(auth, firebaseEmail, password);
@@ -184,6 +184,10 @@ export async function signupUser({ name, id, branch, phone, email, password, rol
       console.info('signupUser: photoFile provided; skipping upload at signup (upload from Profile page instead)');
     }
 
+    // Ensure role is set and valid
+    const userRole = role || 'student';
+    console.info('signupUser: using role =', userRole);
+
     // Store profile in Firestore (users/{uid}). If rules block it, fall back to RTDB when configured.
     let profileSaved = false;
     let profileStorage = null; // 'firestore' | 'rtdb' | null
@@ -197,14 +201,14 @@ export async function signupUser({ name, id, branch, phone, email, password, rol
       branch,
       phone,
       email: firebaseEmail,
-      role,
+      role: userRole,
       photoURL,
       createdAt: serverTimestamp()
     };
 
     try {
       const userRef = doc(db, 'users', user.uid);
-      console.info('signupUser: writing user profile to Firestore');
+      console.info('signupUser: writing user profile to Firestore', profilePayload);
       await setDoc(userRef, profilePayload, { merge: true });
       profileSaved = true;
       profileStorage = 'firestore';
@@ -223,7 +227,7 @@ export async function signupUser({ name, id, branch, phone, email, password, rol
             branch,
             phone,
             email: firebaseEmail,
-            role: role || 'student',
+            role: userRole,
             photoURL: photoURL || ''
           };
           await upsertUserProfileRTDB(user.uid, profilePayloadRTDB);
@@ -247,7 +251,7 @@ export async function signupUser({ name, id, branch, phone, email, password, rol
     }
 
     return { uid: user.uid, profileSaved, profileStorage, profileError };
-  }catch(err){
+  } catch (err) {
     console.error('signupUser error:', err && err.message ? err.message : err);
     throw err;
   }

@@ -47,6 +47,12 @@ export default function LoginForm() {
         setNotice('Profile could not be loaded (offline or network issue). Proceeding with limited access.');
       }
       setNotice('Login successful.');
+      // Debug log for role
+      if (profile) {
+        console.log('User role after login:', profile.role);
+      } else {
+        console.warn('No profile found after login');
+      }
       if (profile && profile.role === 'professor') {
         navigate('/professor/home');
       } else {

@@ -9,6 +9,14 @@ const DISCIPLINES_BY_DEGREE = {
   MTech: ['CSE', 'Cybersecurity', 'AIML']
 };
 
+const BRAND = {
+  primary: '#0F9D78',
+  primaryDark: '#0B7A5E',
+  heading: '#0F172A',
+  body: '#475569',
+  border: '#E5E7EB'
+};
+
 export default function ProfilePage() {
   const { user, profile, refreshProfile } = React.useContext(AuthContext);
 
@@ -345,10 +353,10 @@ export default function ProfilePage() {
       // At this point, Firestore save succeeded.
       setSaveSuccess('Saved successfully');
 
-      // Show saved data immediately (even if re-fetch is slow) and switch to view mode shortly after
-      // so the user can see the "Saved successfully" state before the form disappears.
+      // Show saved data immediately (even if re-fetch is slow) and switch to view mode
+      // so the user sees a read-only preview instead of editable fields.
       setSavedProfile({ uid, ...payload });
-      setTimeout(() => setPageMode('view'), 1200);
+      setPageMode('view');
 
       // Also store the same data in Realtime Database (users/{uid}) when configured
       if (hasRTDB) {
@@ -435,18 +443,23 @@ export default function ProfilePage() {
   const canEdit = pageMode === 'edit';
 
   const ValueBox = ({ value }) => (
-    <div className="w-full px-4 py-3 border border-emerald-200 rounded-lg bg-white text-emerald-900">
+    <div
+      className="w-full px-4 py-3 border rounded-xl bg-white text-gray-900"
+      style={{ borderColor: BRAND.border }}
+    >
       {toDisplay(value)}
     </div>
   );
 
   return (
-    <div className="min-h-screen w-full bg-[#f8faf5] p-6">
+    <div className="min-h-screen w-full bg-[#f8faf5] px-4 sm:px-6 py-10">
       <div className="w-full max-w-4xl mx-auto">
         <div className="flex flex-col gap-6">
-          <div className="bg-[#C1E1C1]/75 rounded-none p-8 shadow-lg border-0">
+          <div className="bg-white rounded-2xl p-8 shadow-sm border" style={{ borderColor: BRAND.border }}>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-2xl font-bold text-emerald-800">Student information</h2>
+              <h2 className="text-2xl font-extrabold" style={{ color: BRAND.heading }}>
+                Student <span style={{ color: BRAND.primary }}>Information</span>
+              </h2>
               {!canEdit ? (
                 <button
                   type="button"
@@ -455,7 +468,8 @@ export default function ProfilePage() {
                     setSaveError('');
                     setPageMode('edit');
                   }}
-                  className="px-4 py-2 rounded-lg border-2 border-emerald-200 bg-white text-emerald-800 font-semibold hover:bg-emerald-50"
+                  className="px-4 py-2 rounded-xl border bg-white font-semibold"
+                  style={{ borderColor: BRAND.border, color: BRAND.primary }}
                 >
                   Edit
                 </button>
@@ -471,7 +485,8 @@ export default function ProfilePage() {
                   if (photoInputRef.current) photoInputRef.current.click();
                 }}
                 disabled={!canEdit}
-                className="w-28 h-28 sm:w-32 sm:h-32 border-2 border-[#2E8B57] rounded-lg bg-white overflow-hidden flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-28 h-28 sm:w-32 sm:h-32 border-2 rounded-xl bg-white overflow-hidden flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                style={{ borderColor: BRAND.primary }}
               >
                 {studentPhotoPreviewUrl ? (
                   <img
@@ -480,7 +495,7 @@ export default function ProfilePage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-sm font-semibold text-emerald-800 text-center px-2">
+                  <span className="text-sm font-medium text-emerald-800 text-center px-2">
                     Add Photo
                   </span>
                 )}
@@ -494,7 +509,7 @@ export default function ProfilePage() {
               />
                 <p className="mt-2 text-xs text-emerald-700">JPG/PNG/WEBP • Max 2MB</p>
                 {photoStatus ? (
-                  <p className="mt-1 text-xs font-semibold text-emerald-800">{photoStatus}</p>
+                  <p className="mt-1 text-xs font-medium text-emerald-800">{photoStatus}</p>
                 ) : null}
                 {photoError ? (
                   <p className="mt-1 text-xs text-red-600">{photoError}</p>
@@ -504,7 +519,7 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">First Name</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">First Name</label>
                 {canEdit ? (
                   <textarea
                     rows={1}
@@ -522,7 +537,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Second Name</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Second Name</label>
                 {canEdit ? (
                   <textarea
                     rows={1}
@@ -540,7 +555,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Phone Number</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Phone Number</label>
                 {canEdit ? (
                   <textarea
                     rows={1}
@@ -560,7 +575,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Degree</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Degree</label>
                 {canEdit ? (
                   <select
                     value={studentInfo.degree}
@@ -580,7 +595,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Discipline</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Discipline</label>
                 {canEdit ? (
                   <select
                     value={studentInfo.discipline}
@@ -601,10 +616,10 @@ export default function ProfilePage() {
                 ) : null}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Year</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Year</label>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-emerald-800 mb-1">From</label>
+                    <label className="block text-xs font-medium text-emerald-800 mb-1">From</label>
                     {canEdit ? (
                       <select
                         value={studentInfo.yearFrom}
@@ -626,7 +641,7 @@ export default function ProfilePage() {
                     ) : null}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-emerald-800 mb-1">To</label>
+                    <label className="block text-xs font-medium text-emerald-800 mb-1">To</label>
                     {canEdit ? (
                       <select
                         value={studentInfo.yearTo}
@@ -652,12 +667,14 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="bg-[#C1E1C1]/75 rounded-none p-8 shadow-lg border-0">
-            <h2 className="text-2xl font-bold text-emerald-800 mb-3">Personal information</h2>
+          <div className="bg-white rounded-2xl p-8 shadow-sm border" style={{ borderColor: BRAND.border }}>
+            <h2 className="text-2xl font-extrabold mb-3" style={{ color: BRAND.heading }}>
+              Personal <span style={{ color: BRAND.primary }}>Information</span>
+            </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Father Name</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Father Name</label>
                 {canEdit ? (
                   <textarea
                     rows={1}
@@ -675,7 +692,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Father Phone Number</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Father Phone Number</label>
                 {canEdit ? (
                   <textarea
                     rows={1}
@@ -695,7 +712,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Mother Name</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Mother Name</label>
                 {canEdit ? (
                   <textarea
                     rows={1}
@@ -713,7 +730,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Mother Phone Number</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Mother Phone Number</label>
                 {canEdit ? (
                   <textarea
                     rows={1}
@@ -733,7 +750,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Aadhaar Number</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Aadhaar Number</label>
                 {canEdit ? (
                   <textarea
                     rows={1}
@@ -753,7 +770,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Blood Group</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Blood Group</label>
                 {canEdit ? (
                   <select
                     value={personalInfo.bloodGroup}
@@ -779,7 +796,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-sm font-semibold text-emerald-800 mb-2">Address</label>
+                <label className="block text-sm font-medium text-emerald-800 mb-2">Address</label>
                 {canEdit ? (
                   <textarea
                     rows={5}
@@ -804,7 +821,15 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleSaveInformation}
                 disabled={saving}
-                className="px-8 py-3 rounded-lg bg-[#2E8B57] text-white font-semibold hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="px-8 py-3 rounded-xl text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                style={{ backgroundColor: BRAND.primary }}
+                onMouseEnter={(e) => {
+                  if (e.currentTarget.disabled) return;
+                  e.currentTarget.style.backgroundColor = BRAND.primaryDark;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = BRAND.primary;
+                }}
               >
                 {saving ? 'Saving...' : (saveSuccess ? 'Saved successfully' : 'Save')}
               </button>
@@ -812,10 +837,10 @@ export default function ProfilePage() {
           ) : null}
 
           {saveSuccess ? (
-            <p className="text-center text-sm font-semibold text-emerald-800">{saveSuccess}</p>
+            <p className="text-center text-sm font-medium text-emerald-800">{saveSuccess}</p>
           ) : null}
           {saveError ? (
-            <p className="text-center text-sm font-semibold text-red-600">{saveError}</p>
+            <p className="text-center text-sm font-medium text-red-600">{saveError}</p>
           ) : null}
         </div>
       </div>

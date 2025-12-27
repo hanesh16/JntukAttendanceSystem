@@ -2,7 +2,6 @@
   "name": "jntuk-attendance-system",
   "version": "1.0.0",
   "description": "JNTUK Attendance System Login",
-  "proxy": "http://localhost:5001",
   "main": "index.js",
   "scripts": {
     "start": "react-scripts start",
@@ -12,6 +11,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
     "firebase": "^9.22.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

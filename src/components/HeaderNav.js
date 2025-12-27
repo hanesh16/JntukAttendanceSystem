@@ -37,16 +37,16 @@ export default function HeaderNav({ title = 'JNTUK Dashboard', subTitle = '', hi
 
       <nav className="flex items-center gap-5">
         {!hideLinks.includes('home') && (
-          <NavLink to="/dashboard" end className={linkClassName}>Home</NavLink>
+          <NavLink to="/home" end className={linkClassName}>Home</NavLink>
         )}
         {!hideLinks.includes('profile') && (
           <NavLink to={`${basePath}/profile`} end className={linkClassName}>Profile</NavLink>
         )}
         {!hideLinks.includes('attendance') && (
-          <NavLink to={`${basePath}/attendance`} end className={linkClassName}>Attendence</NavLink>
+          <NavLink to={`${basePath}/attendance`} end className={linkClassName}>Attendance</NavLink>
         )}
         {!hideLinks.includes('pdfs') && (
-          <NavLink to={`${basePath}/pdfs`} end className={linkClassName}>Pdfs</NavLink>
+          <NavLink to={`${basePath}/pdfs`} end className={linkClassName}>PDFs</NavLink>
         )}
         <a href="/" onClick={handleLogout} className="text-white font-semibold hover:text-red-500 transition-colors">Logout</a>
       </nav>

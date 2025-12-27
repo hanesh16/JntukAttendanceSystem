@@ -253,8 +253,8 @@ export async function signupUser({ name, id, branch, phone, email, password, rol
   }
 }
 
-export async function loginUser(email, password) {
-  try{
+export async function loginUser(email, password, role) {
+  try {
     const firebaseEmail = normalizeEmail(email);
     console.info('loginUser: signing in', firebaseEmail);
     const cred = await signInWithEmailAndPassword(auth, firebaseEmail, password);
@@ -276,15 +276,24 @@ export async function loginUser(email, password) {
     // fetch profile (non-fatal)
     let profile = null;
     let profileError = null;
-    try{
+    try {
       profile = await getUserProfile(user.uid);
       console.info('loginUser: fetched profile', profile && profile.uid);
-    }catch(err){
+      // Check if the profile role matches the requested role
+      if (role && profile && profile.role && profile.role !== role) {
+        await signOut(auth);
+        const err = new Error('role-mismatch');
+        err.code = 'role-mismatch';
+        err.user = user;
+        err.profile = profile;
+        throw err;
+      }
+    } catch (err) {
       profileError = err && err.message ? err.message : String(err);
       console.warn('loginUser: profile fetch failed, continuing without profile:', profileError);
     }
     return { user, profile, profileError };
-  }catch(err){
+  } catch (err) {
     console.error('loginUser error:', err && err.message ? err.message : err);
     throw err;
   }

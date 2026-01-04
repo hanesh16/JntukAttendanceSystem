@@ -1,4 +1,5 @@
-import React from 'react';
+import Files from './pages/Files';
+import StudLMSFiles from './pages/StudLMSFiles';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginForm from './components/LoginForm';
 import { AuthProvider } from './contexts/AuthContext';
@@ -15,6 +16,10 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import ProfessorHome from './pages/ProfessorHome';
 import RequireProfessor from './components/RequireProfessor';
 import AdminSetUserRole from './pages/AdminSetUserRole';
+import ProfProfilePage from './pages/ProfProfilePage';
+import ProfPermissions from './pages/ProfPermissions';
+import ReviewAttendance from './pages/ReviewAttendance';
+import ProfLMSFiles from './pages/ProfLMSFiles';
 import './App.css';
 
 function App() {
@@ -35,11 +40,11 @@ function App() {
           </div>
         } />
 
+
         {/* App pages with global Home navbar */}
         <Route element={<AppLayout />}>
           {/* Home page (replaces Dashboard page) */}
           <Route path="/home" element={<Home />} />
-
           <Route
             path="/profile"
             element={
@@ -48,6 +53,15 @@ function App() {
               </RequireAuth>
             }
           />
+        {/* Files page WITHOUT AppLayout/HomeNavbar */}
+        <Route
+          path="/files"
+          element={
+            <RequireAuth>
+              <Files />
+            </RequireAuth>
+          }
+        />
 
           <Route
             path="/lms"
@@ -86,15 +100,65 @@ function App() {
           />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route
-            path="/professor/home"
+            path="/studlmsfiles"
             element={
-              <RequireProfessor>
-                <ProfessorHome />
-              </RequireProfessor>
+              <RequireAuth>
+                <StudLMSFiles />
+              </RequireAuth>
             }
           />
         </Route>
- 
+
+        {/* ProfessorHome route WITHOUT AppLayout/HomeNavbar */}
+        <Route
+          path="/professor/home"
+          element={
+            <RequireProfessor>
+              <ProfessorHome />
+            </RequireProfessor>
+          }
+        />
+        <Route
+          path="/professor/profile"
+          element={
+            <RequireProfessor>
+              <ProfProfilePage />
+            </RequireProfessor>
+          }
+        />
+        <Route
+          path="/professor/permissions"
+          element={
+            <RequireProfessor>
+              <ProfPermissions />
+            </RequireProfessor>
+          }
+        />
+        <Route
+          path="/professor/review-attendance"
+          element={
+            <RequireProfessor>
+              <ReviewAttendance />
+            </RequireProfessor>
+          }
+        />
+
+        <Route
+          path="/professor/lecture-materials"
+          element={
+            <RequireProfessor>
+              <ProfLMSFiles />
+            </RequireProfessor>
+          }
+        />
+        <Route
+          path="/professor/proflmsfiles"
+          element={
+            <RequireProfessor>
+              <ProfLMSFiles />
+            </RequireProfessor>
+          }
+        />
 
         {/* Back-compat */}
         <Route path="/dashboard" element={<Navigate to="/home" replace />} />

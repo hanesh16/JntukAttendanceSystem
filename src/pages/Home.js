@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import homepageImage from '../jntukimages/homepage.png';
+import StudentFooter from '../components/StudentFooter';
 
 const BRAND = {
   primary: '#0F9D78',
@@ -90,8 +91,7 @@ function Hero() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           <div>
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight" style={{ color: BRAND.heading }}>
-              UCEK JNTUK{' '}
-              <span style={{ color: BRAND.primary }}>STUDENT PORTAL</span>
+              UCEK JNTUK <span style={{ color: BRAND.primary }}>STUDENT PORTAL</span>
             </h1>
             <p className="mt-5 text-base sm:text-lg" style={{ color: BRAND.body }}>
               Welcome to the JNTUK Students Portal, a smart campus platform with photo-based attendance, access to class lecture PPTs, and a personalized learning experience. Track your live attendance percentage, revisit classroom presentations anytime, and stay organised with all your academic resources in one place.
@@ -238,10 +238,7 @@ function CtaBanner() {
               type="button"
               className="btn w-full sm:w-56 h-12 px-5 rounded-xl font-semibold shadow-sm transform transition-transform duration-200 hover:scale-[1.03]"
               style={{ backgroundColor: '#075C47', color: 'white' }}
-              onClick={() => {
-                const navigate = require('react-router-dom').useNavigate();
-                navigate('/lms');
-              }}
+              onClick={() => scrollToHash('#lms')}
             >
               LMS
             </button>
@@ -249,42 +246,6 @@ function CtaBanner() {
         </div>
       </div>
     </section>
-  );
-}
-
-function Footer() {
-  const navigate = useNavigate();
-  return (
-    <footer className="bg-white border-t" style={{ borderColor: BRAND.border }}>
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          <div>
-            <div className="text-lg font-extrabold" style={{ color: BRAND.heading }}>StudentPortal</div>
-            <p className="mt-3 text-sm" style={{ color: BRAND.body }}>
-              A clean, secure, and modern attendance and learning system workflow for students.
-            </p>
-          </div>
-
-          <div>
-            <div className="text-sm font-bold" style={{ color: BRAND.heading }}>Quick Links</div>
-            <div className="mt-3 flex flex-col gap-2">
-              <a href="#top" onClick={(e) => { e.preventDefault(); scrollToHash('#top'); }} className="text-sm hover:underline" style={{ color: BRAND.body }}>Home</a>
-              <a href="/attendance/upload" onClick={(e) => { e.preventDefault(); navigate('/attendance/upload'); }} className="text-sm hover:underline" style={{ color: BRAND.body }}>Upload Attendance</a>
-              <a href="/lms" onClick={(e) => { e.preventDefault(); navigate('/lms'); }} className="text-sm hover:underline" style={{ color: BRAND.body }}>LMS</a>
-            </div>
-          </div>
-
-          <div>
-            <div className="text-sm font-bold" style={{ color: BRAND.heading }}>Support</div>
-            <div className="mt-3 flex flex-col gap-2">
-              <a href="https://www.jntuk.edu.in/contact" target="_blank" rel="noopener noreferrer" className="text-sm hover:underline" style={{ color: BRAND.body }}>Help Center</a>
-              <a href="https://www.jntuk.edu.in/contact" target="_blank" rel="noopener noreferrer" className="text-sm hover:underline" style={{ color: BRAND.body }}>Contact Support</a>
-              <a href="/privacy-policy" onClick={(e) => { e.preventDefault(); navigate('/privacy-policy'); }} className="text-sm hover:underline" style={{ color: BRAND.body }}>Privacy Policy</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
   );
 }
 
@@ -304,7 +265,7 @@ export default function Home() {
       <HowItWorks />
       <HowItWorksDuplicate />
       <CtaBanner />
-      <Footer />
+      <StudentFooter />
     </div>
   );
 }

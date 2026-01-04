@@ -2,7 +2,8 @@ import React from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { getUserProfile, getUserProfileRTDB, hasRTDB, upsertUserProfile, upsertUserProfileRTDB } from '../firebase';
 import { serverTimestamp } from 'firebase/firestore';
-import { createSignedUrlForObject, getSupabaseJwtFromFirebaseUser, uploadProfileImageToSupabasePrivate } from '../supabase';
+import { createSignedUrlForObject, getSupabaseJwtFromFirebaseUser, uploadProfileImageToSupabasePrivate, upsertSupabaseProfile } from '../supabase';
+import StudentFooter from '../components/StudentFooter';
 
 const DISCIPLINES_BY_DEGREE = {
   BTech: ['CSE', 'Cyber security', 'AIML', 'AIDS'],
@@ -344,17 +345,40 @@ export default function ProfilePage() {
         }
       }
 
+
+      // Save all profile data to Supabase (not just photo)
       await withTimeout(
-        upsertUserProfile(uid, payload),
+        upsertSupabaseProfile({
+          id: uid,
+          email: payload.email,
+          first_name: payload.firstName,
+          second_name: payload.secondName,
+          phone_number: payload.phoneNumber,
+          degree: payload.degree,
+          discipline: payload.discipline,
+          year_from: payload.yearFrom,
+          year_to: payload.yearTo,
+          father_name: payload.fatherName,
+          father_phone_number: payload.fatherPhoneNumber,
+          mother_name: payload.motherName,
+          mother_phone_number: payload.motherPhoneNumber,
+          aadhaar_number: payload.aadhaarNumber,
+          aadhaar_last4: payload.aadhaarLast4,
+          blood_group: payload.bloodGroup,
+          address: payload.address,
+          role: payload.role,
+          photo_url: payload.photoURL || '',
+          photo_path: payload.photoPath || '',
+          photo_bucket: payload.photoBucket || '',
+          photo_object_path: payload.photoObjectPath || '',
+          created_at: existingCreatedAt || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }),
         15000,
-        'Save timed out. Check your internet connection and Firestore rules, then try again.'
+        'Save to Supabase timed out. Check your internet connection and Supabase table, then try again.'
       );
 
-      // At this point, Firestore save succeeded.
       setSaveSuccess('Saved successfully');
-
-      // Show saved data immediately (even if re-fetch is slow) and switch to view mode
-      // so the user sees a read-only preview instead of editable fields.
       setSavedProfile({ uid, ...payload });
       setPageMode('view');
 
@@ -452,398 +476,401 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="min-h-screen w-full bg-[#f8faf5] px-4 sm:px-6 py-10">
-      <div className="w-full max-w-4xl mx-auto">
-        <div className="flex flex-col gap-6">
-          <div className="bg-white rounded-2xl p-8 shadow-sm border" style={{ borderColor: BRAND.border }}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-2xl font-extrabold" style={{ color: BRAND.heading }}>
-                Student <span style={{ color: BRAND.primary }}>Information</span>
-              </h2>
-              {!canEdit ? (
-                <button
+    <div className="min-h-screen flex flex-col bg-[#f8faf5]">
+      <div className="flex-1">
+        <div className="w-full max-w-4xl mx-auto">
+          <div className="flex flex-col gap-6">
+            <div className="bg-white rounded-2xl p-8 shadow-sm border" style={{ borderColor: BRAND.border }}>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-2xl font-extrabold" style={{ color: BRAND.heading }}>
+                  Student <span style={{ color: BRAND.primary }}>Information</span>
+                </h2>
+                {!canEdit ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSaveSuccess('');
+                      setSaveError('');
+                      setPageMode('edit');
+                    }}
+                    className="px-4 py-2 rounded-xl border bg-white font-semibold"
+                    style={{ borderColor: BRAND.border, color: BRAND.primary }}
+                  >
+                    Edit
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="mt-6 flex justify-center">
+                <div className="flex flex-col items-center">
+                  <button
                   type="button"
                   onClick={() => {
-                    setSaveSuccess('');
-                    setSaveError('');
-                    setPageMode('edit');
+                    if (!canEdit) return;
+                    if (photoInputRef.current) photoInputRef.current.click();
                   }}
-                  className="px-4 py-2 rounded-xl border bg-white font-semibold"
-                  style={{ borderColor: BRAND.border, color: BRAND.primary }}
+                  disabled={!canEdit}
+                  className="w-28 h-28 sm:w-32 sm:h-32 border-2 rounded-xl bg-white overflow-hidden flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                  style={{ borderColor: BRAND.primary }}
                 >
-                  Edit
-                </button>
-              ) : null}
-            </div>
-
-            <div className="mt-6 flex justify-center">
-              <div className="flex flex-col items-center">
-                <button
-                type="button"
-                onClick={() => {
-                  if (!canEdit) return;
-                  if (photoInputRef.current) photoInputRef.current.click();
-                }}
-                disabled={!canEdit}
-                className="w-28 h-28 sm:w-32 sm:h-32 border-2 rounded-xl bg-white overflow-hidden flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
-                style={{ borderColor: BRAND.primary }}
-              >
-                {studentPhotoPreviewUrl ? (
-                  <img
-                    src={studentPhotoPreviewUrl}
-                    alt="Student"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-sm font-medium text-emerald-800 text-center px-2">
-                    Add Photo
-                  </span>
-                )}
-                </button>
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={canEdit ? onPickStudentPhoto : undefined}
-              />
-                <p className="mt-2 text-xs text-emerald-700">JPG/PNG/WEBP • Max 2MB</p>
-                {photoStatus ? (
-                  <p className="mt-1 text-xs font-medium text-emerald-800">{photoStatus}</p>
-                ) : null}
-                {photoError ? (
-                  <p className="mt-1 text-xs text-red-600">{photoError}</p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">First Name</label>
-                {canEdit ? (
-                  <textarea
-                    rows={1}
-                    value={studentInfo.firstName}
-                    onChange={setField('firstName')}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter first name"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.firstName ?? studentInfo.firstName} />
-                )}
-                {fieldErrors.firstName ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.firstName}</p>
-                ) : null}
+                  {studentPhotoPreviewUrl ? (
+                    <img
+                      src={studentPhotoPreviewUrl}
+                      alt="Student"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium text-emerald-800 text-center px-2">
+                      Add Photo
+                    </span>
+                  )}
+                  </button>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={canEdit ? onPickStudentPhoto : undefined}
+                />
+                  <p className="mt-2 text-xs text-emerald-700">JPG/PNG/WEBP • Max 2MB</p>
+                  {photoStatus ? (
+                    <p className="mt-1 text-xs font-medium text-emerald-800">{photoStatus}</p>
+                  ) : null}
+                  {photoError ? (
+                    <p className="mt-1 text-xs text-red-600">{photoError}</p>
+                  ) : null}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Second Name</label>
-                {canEdit ? (
-                  <textarea
-                    rows={1}
-                    value={studentInfo.secondName}
-                    onChange={setField('secondName')}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter second name"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.secondName ?? studentInfo.secondName} />
-                )}
-                {fieldErrors.secondName ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.secondName}</p>
-                ) : null}
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">First Name</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={1}
+                      value={studentInfo.firstName}
+                      onChange={setField('firstName')}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter first name"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.firstName ?? studentInfo.firstName} />
+                  )}
+                  {fieldErrors.firstName ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.firstName}</p>
+                  ) : null}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Phone Number</label>
-                {canEdit ? (
-                  <textarea
-                    rows={1}
-                    value={studentInfo.phoneNumber}
-                    onChange={setField('phoneNumber')}
-                    inputMode="numeric"
-                    maxLength={10}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter phone number"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.phoneNumber ?? studentInfo.phoneNumber} />
-                )}
-                {fieldErrors.phoneNumber ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.phoneNumber}</p>
-                ) : null}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Second Name</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={1}
+                      value={studentInfo.secondName}
+                      onChange={setField('secondName')}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter second name"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.secondName ?? studentInfo.secondName} />
+                  )}
+                  {fieldErrors.secondName ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.secondName}</p>
+                  ) : null}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Degree</label>
-                {canEdit ? (
-                  <select
-                    value={studentInfo.degree}
-                    onChange={setDegree}
-                    className="w-full px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="" disabled>Select Degree</option>
-                    <option value="BTech">BTech</option>
-                    <option value="MTech">MTech</option>
-                  </select>
-                ) : (
-                  <ValueBox value={savedProfile?.degree ?? studentInfo.degree} />
-                )}
-                {fieldErrors.degree ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.degree}</p>
-                ) : null}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Phone Number</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={1}
+                      value={studentInfo.phoneNumber}
+                      onChange={setField('phoneNumber')}
+                      inputMode="numeric"
+                      maxLength={10}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter phone number"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.phoneNumber ?? studentInfo.phoneNumber} />
+                  )}
+                  {fieldErrors.phoneNumber ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.phoneNumber}</p>
+                  ) : null}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Discipline</label>
-                {canEdit ? (
-                  <select
-                    value={studentInfo.discipline}
-                    onChange={setField('discipline')}
-                    className="w-full px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    disabled={!studentInfo.degree}
-                  >
-                    <option value="" disabled>{studentInfo.degree ? 'Select discipline' : 'Select Degree first'}</option>
-                    {disciplineOptions.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <ValueBox value={savedProfile?.discipline ?? studentInfo.discipline} />
-                )}
-                {fieldErrors.discipline ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.discipline}</p>
-                ) : null}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Year</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-emerald-800 mb-1">From</label>
-                    {canEdit ? (
-                      <select
-                        value={studentInfo.yearFrom}
-                        onChange={setField('yearFrom')}
-                        className="w-full px-3 py-2 text-sm border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      >
-                        <option value="" disabled>Select year</option>
-                        {Array.from({ length: 2050 - 2020 + 1 }, (_, i) => String(2050 - i)).map((y) => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="w-full px-3 py-2 text-sm border border-emerald-200 rounded-lg bg-white text-emerald-900">
-                        {toDisplay(savedProfile?.yearFrom ?? studentInfo.yearFrom)}
-                      </div>
-                    )}
-                    {fieldErrors.yearFrom ? (
-                      <p className="text-xs text-red-600 mt-1">{fieldErrors.yearFrom}</p>
-                    ) : null}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-emerald-800 mb-1">To</label>
-                    {canEdit ? (
-                      <select
-                        value={studentInfo.yearTo}
-                        onChange={setField('yearTo')}
-                        className="w-full px-3 py-2 text-sm border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      >
-                        <option value="" disabled>Select year</option>
-                        {Array.from({ length: 2050 - 2020 + 1 }, (_, i) => String(2050 - i)).map((y) => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="w-full px-3 py-2 text-sm border border-emerald-200 rounded-lg bg-white text-emerald-900">
-                        {toDisplay(savedProfile?.yearTo ?? studentInfo.yearTo)}
-                      </div>
-                    )}
-                    {fieldErrors.yearTo ? (
-                      <p className="text-xs text-red-600 mt-1">{fieldErrors.yearTo}</p>
-                    ) : null}
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Degree</label>
+                  {canEdit ? (
+                    <select
+                      value={studentInfo.degree}
+                      onChange={setDegree}
+                      className="w-full px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="" disabled>Select Degree</option>
+                      <option value="BTech">BTech</option>
+                      <option value="MTech">MTech</option>
+                    </select>
+                  ) : (
+                    <ValueBox value={savedProfile?.degree ?? studentInfo.degree} />
+                  )}
+                  {fieldErrors.degree ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.degree}</p>
+                  ) : null}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Discipline</label>
+                  {canEdit ? (
+                    <select
+                      value={studentInfo.discipline}
+                      onChange={setField('discipline')}
+                      className="w-full px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      disabled={!studentInfo.degree}
+                    >
+                      <option value="" disabled>{studentInfo.degree ? 'Select discipline' : 'Select Degree first'}</option>
+                      {disciplineOptions.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <ValueBox value={savedProfile?.discipline ?? studentInfo.discipline} />
+                  )}
+                  {fieldErrors.discipline ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.discipline}</p>
+                  ) : null}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Year</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-emerald-800 mb-1">From</label>
+                      {canEdit ? (
+                        <select
+                          value={studentInfo.yearFrom}
+                          onChange={setField('yearFrom')}
+                          className="w-full px-3 py-2 text-sm border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="" disabled>Select year</option>
+                          {Array.from({ length: 2050 - 2020 + 1 }, (_, i) => String(2050 - i)).map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="w-full px-3 py-2 text-sm border border-emerald-200 rounded-lg bg-white text-emerald-900">
+                          {toDisplay(savedProfile?.yearFrom ?? studentInfo.yearFrom)}
+                        </div>
+                      )}
+                      {fieldErrors.yearFrom ? (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors.yearFrom}</p>
+                      ) : null}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-emerald-800 mb-1">To</label>
+                      {canEdit ? (
+                        <select
+                          value={studentInfo.yearTo}
+                          onChange={setField('yearTo')}
+                          className="w-full px-3 py-2 text-sm border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="" disabled>Select year</option>
+                          {Array.from({ length: 2050 - 2020 + 1 }, (_, i) => String(2050 - i)).map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="w-full px-3 py-2 text-sm border border-emerald-200 rounded-lg bg-white text-emerald-900">
+                          {toDisplay(savedProfile?.yearTo ?? studentInfo.yearTo)}
+                        </div>
+                      )}
+                      {fieldErrors.yearTo ? (
+                        <p className="text-xs text-red-600 mt-1">{fieldErrors.yearTo}</p>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-2xl p-8 shadow-sm border" style={{ borderColor: BRAND.border }}>
-            <h2 className="text-2xl font-extrabold mb-3" style={{ color: BRAND.heading }}>
-              Personal <span style={{ color: BRAND.primary }}>Information</span>
-            </h2>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border" style={{ borderColor: BRAND.border }}>
+              <h2 className="text-2xl font-extrabold mb-3" style={{ color: BRAND.heading }}>
+                Personal <span style={{ color: BRAND.primary }}>Information</span>
+              </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Father Name</label>
-                {canEdit ? (
-                  <textarea
-                    rows={1}
-                    value={personalInfo.fatherName}
-                    onChange={setPersonalField('fatherName')}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter father name"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.fatherName ?? personalInfo.fatherName} />
-                )}
-                {fieldErrors.fatherName ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.fatherName}</p>
-                ) : null}
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Father Name</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={1}
+                      value={personalInfo.fatherName}
+                      onChange={setPersonalField('fatherName')}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter father name"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.fatherName ?? personalInfo.fatherName} />
+                  )}
+                  {fieldErrors.fatherName ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.fatherName}</p>
+                  ) : null}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Father Phone Number</label>
-                {canEdit ? (
-                  <textarea
-                    rows={1}
-                    value={personalInfo.fatherPhoneNumber}
-                    onChange={setPersonalField('fatherPhoneNumber')}
-                    inputMode="numeric"
-                    maxLength={10}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter father phone number"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.fatherPhoneNumber ?? personalInfo.fatherPhoneNumber} />
-                )}
-                {fieldErrors.fatherPhoneNumber ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.fatherPhoneNumber}</p>
-                ) : null}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Father Phone Number</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={1}
+                      value={personalInfo.fatherPhoneNumber}
+                      onChange={setPersonalField('fatherPhoneNumber')}
+                      inputMode="numeric"
+                      maxLength={10}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter father phone number"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.fatherPhoneNumber ?? personalInfo.fatherPhoneNumber} />
+                  )}
+                  {fieldErrors.fatherPhoneNumber ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.fatherPhoneNumber}</p>
+                  ) : null}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Mother Name</label>
-                {canEdit ? (
-                  <textarea
-                    rows={1}
-                    value={personalInfo.motherName}
-                    onChange={setPersonalField('motherName')}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter mother name"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.motherName ?? personalInfo.motherName} />
-                )}
-                {fieldErrors.motherName ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.motherName}</p>
-                ) : null}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Mother Name</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={1}
+                      value={personalInfo.motherName}
+                      onChange={setPersonalField('motherName')}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter mother name"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.motherName ?? personalInfo.motherName} />
+                  )}
+                  {fieldErrors.motherName ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.motherName}</p>
+                  ) : null}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Mother Phone Number</label>
-                {canEdit ? (
-                  <textarea
-                    rows={1}
-                    value={personalInfo.motherPhoneNumber}
-                    onChange={setPersonalField('motherPhoneNumber')}
-                    inputMode="numeric"
-                    maxLength={10}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter mother phone number"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.motherPhoneNumber ?? personalInfo.motherPhoneNumber} />
-                )}
-                {fieldErrors.motherPhoneNumber ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.motherPhoneNumber}</p>
-                ) : null}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Mother Phone Number</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={1}
+                      value={personalInfo.motherPhoneNumber}
+                      onChange={setPersonalField('motherPhoneNumber')}
+                      inputMode="numeric"
+                      maxLength={10}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter mother phone number"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.motherPhoneNumber ?? personalInfo.motherPhoneNumber} />
+                  )}
+                  {fieldErrors.motherPhoneNumber ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.motherPhoneNumber}</p>
+                  ) : null}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Aadhaar Number</label>
-                {canEdit ? (
-                  <textarea
-                    rows={1}
-                    value={personalInfo.aadhaarNumber}
-                    onChange={setPersonalField('aadhaarNumber')}
-                    inputMode="numeric"
-                    maxLength={12}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter 12-digit Aadhaar"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.aadhaarNumber ?? personalInfo.aadhaarNumber} />
-                )}
-                {fieldErrors.aadhaarNumber ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.aadhaarNumber}</p>
-                ) : null}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Aadhaar Number</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={1}
+                      value={personalInfo.aadhaarNumber}
+                      onChange={setPersonalField('aadhaarNumber')}
+                      inputMode="numeric"
+                      maxLength={12}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter 12-digit Aadhaar"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.aadhaarNumber ?? personalInfo.aadhaarNumber} />
+                  )}
+                  {fieldErrors.aadhaarNumber ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.aadhaarNumber}</p>
+                  ) : null}
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Blood Group</label>
-                {canEdit ? (
-                  <select
-                    value={personalInfo.bloodGroup}
-                    onChange={setPersonalField('bloodGroup')}
-                    className="w-full px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="" disabled>Select Blood Group</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                  </select>
-                ) : (
-                  <ValueBox value={savedProfile?.bloodGroup ?? personalInfo.bloodGroup} />
-                )}
-                {fieldErrors.bloodGroup ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.bloodGroup}</p>
-                ) : null}
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Blood Group</label>
+                  {canEdit ? (
+                    <select
+                      value={personalInfo.bloodGroup}
+                      onChange={setPersonalField('bloodGroup')}
+                      className="w-full px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="" disabled>Select Blood Group</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  ) : (
+                    <ValueBox value={savedProfile?.bloodGroup ?? personalInfo.bloodGroup} />
+                  )}
+                  {fieldErrors.bloodGroup ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.bloodGroup}</p>
+                  ) : null}
+                </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-emerald-800 mb-2">Address</label>
-                {canEdit ? (
-                  <textarea
-                    rows={5}
-                    value={personalInfo.address}
-                    onChange={setPersonalField('address')}
-                    className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Enter address"
-                  />
-                ) : (
-                  <ValueBox value={savedProfile?.address ?? personalInfo.address} />
-                )}
-                {fieldErrors.address ? (
-                  <p className="text-xs text-red-600 mt-1">{fieldErrors.address}</p>
-                ) : null}
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-emerald-800 mb-2">Address</label>
+                  {canEdit ? (
+                    <textarea
+                      rows={5}
+                      value={personalInfo.address}
+                      onChange={setPersonalField('address')}
+                      className="w-full resize-none px-4 py-3 border border-emerald-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Enter address"
+                    />
+                  ) : (
+                    <ValueBox value={savedProfile?.address ?? personalInfo.address} />
+                  )}
+                  {fieldErrors.address ? (
+                    <p className="text-xs text-red-600 mt-1">{fieldErrors.address}</p>
+                  ) : null}
+                </div>
               </div>
             </div>
+
+            {canEdit ? (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleSaveInformation}
+                  disabled={saving}
+                  className="px-8 py-3 rounded-xl text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  style={{ backgroundColor: BRAND.primary }}
+                  onMouseEnter={(e) => {
+                    if (e.currentTarget.disabled) return;
+                    e.currentTarget.style.backgroundColor = BRAND.primaryDark;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = BRAND.primary;
+                  }}
+                >
+                  {saving ? 'Saving...' : (saveSuccess ? 'Saved successfully' : 'Save')}
+                </button>
+              </div>
+            ) : null}
+
+            {saveSuccess ? (
+              <p className="text-center text-sm font-medium text-emerald-800">{saveSuccess}</p>
+            ) : null}
+            {saveError ? (
+              <p className="text-center text-sm font-medium text-red-600">{saveError}</p>
+            ) : null}
           </div>
-
-          {canEdit ? (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={handleSaveInformation}
-                disabled={saving}
-                className="px-8 py-3 rounded-xl text-white font-semibold disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                style={{ backgroundColor: BRAND.primary }}
-                onMouseEnter={(e) => {
-                  if (e.currentTarget.disabled) return;
-                  e.currentTarget.style.backgroundColor = BRAND.primaryDark;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = BRAND.primary;
-                }}
-              >
-                {saving ? 'Saving...' : (saveSuccess ? 'Saved successfully' : 'Save')}
-              </button>
-            </div>
-          ) : null}
-
-          {saveSuccess ? (
-            <p className="text-center text-sm font-medium text-emerald-800">{saveSuccess}</p>
-          ) : null}
-          {saveError ? (
-            <p className="text-center text-sm font-medium text-red-600">{saveError}</p>
-          ) : null}
         </div>
       </div>
+      <StudentFooter />
     </div>
   );
 }

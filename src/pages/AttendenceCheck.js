@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import StudentFooter from '../components/StudentFooter';
 
 export default function AttendenceCheck() {
   const navigate = useNavigate();
@@ -22,95 +23,98 @@ export default function AttendenceCheck() {
   }, [program]);
 
   return (
-    <div className="min-h-screen bg-[#f8faf5] px-4 sm:px-6 py-10">
-      <div className="max-w-xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-center uppercase">
-          <span style={{ color: BRAND.green }}>ATTENDANCE</span>{' '}
-          <span className="text-gray-900">REGISTER</span>
-        </h1>
+    <div className="min-h-screen flex flex-col bg-[#f8faf5]">
+      <div className="flex-1">
+        <div className="max-w-xl mx-auto">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-center uppercase">
+            <span style={{ color: BRAND.green }}>ATTENDANCE</span>{' '}
+            <span className="text-gray-900">REGISTER</span>
+          </h1>
 
-        <div className="mt-6 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Reg No</label>
-              <textarea
-                rows={1}
-                value={regNo}
-                onChange={(e) => setRegNo(e.target.value)}
-                placeholder="Enter registration number"
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-transform duration-150 hover:scale-[1.01] focus:scale-[1.01]"
-              />
-            </div>
+          <div className="mt-6 bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Reg No</label>
+                <textarea
+                  rows={1}
+                  value={regNo}
+                  onChange={(e) => setRegNo(e.target.value)}
+                  placeholder="Enter registration number"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-transform duration-150 hover:scale-[1.01] focus:scale-[1.01]"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Program</label>
-              <select
-                value={program}
-                onChange={(e) => {
-                  setProgram(e.target.value);
-                  setYear('');
-                }}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-transform duration-150 hover:scale-[1.01] focus:scale-[1.01]"
-              >
-                <option value="" disabled>
-                  Choose
-                </option>
-                <option value="BTECH">B.Tech</option>
-                <option value="MTECH">M.Tech</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">Year</label>
-              <select
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                disabled={!program}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-transform duration-150 hover:scale-[1.01] focus:scale-[1.01] disabled:bg-gray-100 disabled:text-gray-500"
-              >
-                <option value="" disabled>
-                  Choose
-                </option>
-                {yearOptions.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Program</label>
+                <select
+                  value={program}
+                  onChange={(e) => {
+                    setProgram(e.target.value);
+                    setYear('');
+                  }}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-transform duration-150 hover:scale-[1.01] focus:scale-[1.01]"
+                >
+                  <option value="" disabled>
+                    Choose
                   </option>
-                ))}
-              </select>
-            </div>
-          </div>
+                  <option value="BTECH">B.Tech</option>
+                  <option value="MTECH">M.Tech</option>
+                </select>
+              </div>
 
-          <div className="mt-6">
-            <button
-              type="button"
-              className="btn w-full h-12 rounded-xl font-semibold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ backgroundColor: BRAND.green, borderColor: BRAND.green }}
-              disabled={!canOpen}
-              onMouseEnter={(e) => {
-                if (e.currentTarget.disabled) return;
-                e.currentTarget.style.backgroundColor = BRAND.greenDark;
-                e.currentTarget.style.borderColor = BRAND.greenDark;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = BRAND.green;
-                e.currentTarget.style.borderColor = BRAND.green;
-              }}
-              onClick={() => {
-                if (!canOpen) return;
-                navigate('/attendance/register', {
-                  state: {
-                    regNo,
-                    program,
-                    year
-                  }
-                });
-              }}
-            >
-              Open
-            </button>
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Year</label>
+                <select
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  disabled={!program}
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-transform duration-150 hover:scale-[1.01] focus:scale-[1.01] disabled:bg-gray-100 disabled:text-gray-500"
+                >
+                  <option value="" disabled>
+                    Choose
+                  </option>
+                  {yearOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <button
+                type="button"
+                className="btn w-full h-12 rounded-xl font-semibold text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ backgroundColor: BRAND.green, borderColor: BRAND.green }}
+                disabled={!canOpen}
+                onMouseEnter={(e) => {
+                  if (e.currentTarget.disabled) return;
+                  e.currentTarget.style.backgroundColor = BRAND.greenDark;
+                  e.currentTarget.style.borderColor = BRAND.greenDark;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = BRAND.green;
+                  e.currentTarget.style.borderColor = BRAND.green;
+                }}
+                onClick={() => {
+                  if (!canOpen) return;
+                  navigate('/attendance/register', {
+                    state: {
+                      regNo,
+                      program,
+                      year
+                    }
+                  });
+                }}
+              >
+                Open
+              </button>
+            </div>
           </div>
         </div>
       </div>
+      <StudentFooter />
     </div>
   );
 }

@@ -36,13 +36,14 @@ import {
 // REACT_APP_FIREBASE_PROJECT_ID=...
 
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
-  // Optional (only needed if you want to use Firebase Realtime Database)
-  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL
+  apiKey: "AIzaSyBW5AdIojmoEb7Pa2m4SGPreFk-aAIRG0U",
+  authDomain: "attendencesystem-27682.firebaseapp.com",
+  databaseURL: "https://attendencesystem-27682-default-rtdb.firebaseio.com",
+  projectId: "attendencesystem-27682",
+  storageBucket: "attendencesystem-27682.firebasestorage.app",
+  messagingSenderId: "559463642852",
+  appId: "1:559463642852:web:21369eb60e623f87705ef1",
+  measurementId: "G-C6JXESVTYD"
 };
 
 const hasRTDB = Boolean(firebaseConfig.databaseURL);

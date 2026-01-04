@@ -1,4 +1,18 @@
+
 import { createClient } from '@supabase/supabase-js';
+
+// Upsert all profile data to Supabase 'profiles' table
+export async function upsertSupabaseProfile(profile) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Supabase is not configured. Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to .env.local.');
+  }
+  // Use 'id' (uid) as primary key, or 'email' if you prefer
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert([profile], { onConflict: ['id'] });
+  if (error) throw error;
+  return data;
+}
 
 const defaultTokenEndpoint = typeof window !== 'undefined' ? '/supabase-token' : null;
 

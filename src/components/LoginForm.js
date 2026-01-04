@@ -16,7 +16,8 @@ const BRAND = {
 export default function LoginForm() {
   const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // 'login' or 'signup'
-  const [activeTab, setActiveTab] = useState('student');
+  // Role selection for login/signup
+  const [activeTab, setActiveTab] = useState('student'); // 'student' or 'professor'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [notice, setNotice] = useState(null);
@@ -53,9 +54,13 @@ export default function LoginForm() {
       } else {
         console.warn('No profile found after login');
       }
+      // Redirect based on role
       if (profile && profile.role === 'professor') {
         navigate('/professor/home');
+      } else if (profile && profile.role === 'student') {
+        navigate('/home');
       } else {
+        // fallback
         navigate('/home');
       }
     } catch (err) {
@@ -111,49 +116,28 @@ export default function LoginForm() {
       className="w-full bg-white/90 backdrop-blur-sm border rounded-2xl shadow-sm p-8"
       style={{ borderColor: BRAND.border }}
     >
-      <div className="flex gap-2 mb-6">
+
+      {/* Role selection tabs with green slider box */}
+      <div className="flex gap-2 mb-4 relative" style={{ minHeight: '48px' }}>
         <button
           type="button"
           onClick={() => setActiveTab('student')}
-          className={`flex-1 py-3 px-4 rounded-xl font-semibold border transition-colors ${activeTab === 'student' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-          style={
-            activeTab === 'student'
-              ? { backgroundColor: BRAND.primary, borderColor: BRAND.primary }
-              : { borderColor: BRAND.border }
-          }
-          onMouseEnter={(e) => {
-            if (activeTab !== 'student') return;
-            e.currentTarget.style.backgroundColor = BRAND.primaryDark;
-          }}
-          onMouseLeave={(e) => {
-            if (activeTab !== 'student') return;
-            e.currentTarget.style.backgroundColor = BRAND.primary;
-          }}
+          className={`flex-1 py-2 px-4 font-semibold transition-all duration-300 rounded-xl ${activeTab === 'student' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-transparent text-gray-700'}`}
+          style={activeTab === 'student' ? { boxShadow: '0 2px 12px 0 rgba(16,185,129,0.08)' } : {}}
         >
           Student
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('professor')}
-          className={`flex-1 py-3 px-4 rounded-xl font-semibold border transition-colors ${activeTab === 'professor' ? 'text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-          style={
-            activeTab === 'professor'
-              ? { backgroundColor: BRAND.primary, borderColor: BRAND.primary }
-              : { borderColor: BRAND.border }
-          }
-          onMouseEnter={(e) => {
-            if (activeTab !== 'professor') return;
-            e.currentTarget.style.backgroundColor = BRAND.primaryDark;
-          }}
-          onMouseLeave={(e) => {
-            if (activeTab !== 'professor') return;
-            e.currentTarget.style.backgroundColor = BRAND.primary;
-          }}
+          className={`flex-1 py-2 px-4 font-semibold transition-all duration-300 rounded-xl ${activeTab === 'professor' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-transparent text-gray-700'}`}
+          style={activeTab === 'professor' ? { boxShadow: '0 2px 12px 0 rgba(16,185,129,0.08)' } : {}}
         >
           Professor
         </button>
       </div>
 
+      {/* Login/Signup mode tabs */}
       <div className="flex gap-2 mb-6 border-b border-gray-300">
         <button
           type="button"
@@ -178,8 +162,9 @@ export default function LoginForm() {
 
       {mode === 'login' && (
         <>
-          <h1 className="text-2xl font-extrabold text-center mb-6" style={{ color: BRAND.heading }}>
-            {activeTab === 'student' ? 'Student Login' : 'Professor Login'}
+          <h1 className="text-2xl font-extrabold text-center mb-6">
+            <span className="text-black">{activeTab === 'student' ? 'Student' : 'Professor'}</span>
+            <span style={{ color: BRAND.primary }}> Login</span>
           </h1>
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
@@ -229,31 +214,20 @@ export default function LoginForm() {
 
       {mode === 'signup' && (
         <>
-          <h1 className="text-2xl font-extrabold text-center mb-6" style={{ color: BRAND.heading }}>
-            {activeTab === 'student' ? 'Student Signup' : 'Professor Signup'}
+          <h1 className="text-2xl font-extrabold text-center mb-6">
+            <span className="text-black">{activeTab === 'student' ? 'Student' : 'Professor'}</span>
+            <span style={{ color: BRAND.primary }}> Signup</span>
           </h1>
           <form onSubmit={handleSignupSubmit} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-              <input
-                type="text"
-                name="name"
-                value={signupData.name}
-                onChange={handleSignupChange}
-                required
-                placeholder="Full name"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{activeTab === 'student' ? 'Student ID' : 'Faculty ID'}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Reg ID</label>
               <input
                 type="text"
                 name="id"
                 value={signupData.id}
                 onChange={handleSignupChange}
                 required
-                placeholder="ID"
+                placeholder="Reg ID"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
               />
             </div>
